@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 
+#if defined(_WIN32)
+constexpr const char* DEV_NULL = " >NUL 2>&1";
+#else
+constexpr const char* DEV_NULL = " >/dev/null 2>&1";
+#endif
+
 // Helper to format elapsed time nicely
 std::string format_duration(std::chrono::milliseconds ms) {
     auto total_ms = ms.count();
@@ -47,7 +53,7 @@ int main(int argc, char* argv[]) {
 
         tasks.emplace_back(cmd, repetitions);
 
-        // If there's an AND, skip it
+        // Skip AND if present
         if (i < argc && std::string(argv[i]) == "AND") {
             i++;
         }
@@ -57,7 +63,8 @@ int main(int argc, char* argv[]) {
     for (auto& [cmd, reps] : tasks) {
         auto start = std::chrono::steady_clock::now();
         for (int i = 0; i < reps; ++i) {
-            int ret = std::system(cmd.c_str());
+            std::string silent_cmd = cmd + DEV_NULL;
+            int ret = std::system(silent_cmd.c_str());
             if (ret != 0) {
                 std::cerr << "Command returned non-zero exit code: " << ret << "\n";
             }
